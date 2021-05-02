@@ -1,7 +1,7 @@
 {
-  "name": "sort-files",
+  "name": "node-hm-1",
   "version": "1.0.0",
-  "description": "",
+  "description": "group files by first letter",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -10,5 +10,12 @@
   "license": "ISC",
   "dependencies": {
     "yargs": "^16.2.0"
+  },
+  "devDependencies": {
+    "eslint": "^7.25.0",
+    "eslint-config-standard": "^16.0.2",
+    "eslint-plugin-import": "^2.22.1",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^4.3.1"
   }
 }
