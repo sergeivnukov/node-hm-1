@@ -1,32 +1,33 @@
 const fs = require('fs');
 const path = require('path');
-const move = require('./move');
+const copyFile = require('./copyFile');
 
 const fileExceptions = ['.DS_Store']; // exclude macOS files
 
-const parseFiles = (base, level = 0) => {
-  const files = fs.readdirSync(base);
-  const filteredFiles = files.filter((file) => !fileExceptions.includes(file));
-
-  filteredFiles.forEach(fileName => {
-    const localBase = path.join(base, fileName);
-    const state = fs.statSync(localBase);
-
-    if (state.isDirectory()) {
-      parseFiles(localBase, level + 1);
-    } else {
-      move(fileName, localBase);
+const parseFiles = (base, resultFolder) => {
+  fs.readdir(base, (err, files) => {
+    if (err) {
+      console.error(err.message);
+      process.exit(1);
     }
-  });
+    const filteredFiles = files.filter((file) => !fileExceptions.includes(file));
 
-  if (global.delete) {
-    fs.rmdir(base, (err) => {
-      if (err) {
-        console.log(err);
-      }
-      console.log('✓ Entry folder was deleted');
+    filteredFiles.forEach(fileName => {
+      const localBase = path.join(base, fileName);
+
+      fs.stat(localBase, (err, stat) => {
+        if (err) {
+          console.error(err.message);
+          process.exit(1);
+        }
+        if (stat.isDirectory()) {
+          parseFiles(localBase, resultFolder);
+        } else {
+          copyFile(fileName, localBase, resultFolder);
+        }
+      });
     });
-  }
+  });
 };
 
 module.exports = parseFiles;

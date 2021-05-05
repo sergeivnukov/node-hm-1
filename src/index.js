@@ -20,12 +20,6 @@ const argv = yargs
     describe: 'Path to output folder',
     default: '../output'
   })
-  .option('delete', {
-    alias: 'D',
-    describe: 'Delete entry folder?',
-    type: 'boolean',
-    default: false
-  })
   .epilog('application')
   .argv;
 
@@ -34,27 +28,32 @@ const paths = {
   output: path.normalize(path.resolve(__dirname, argv.output))
 };
 
-global.paths = paths;
-global.delete = argv.delete;
-
 const groupFiles = () => {
-  if (fs.existsSync(paths.output)) {
-    console.error(`Error: Can't create a result folder, folder ${global.paths.output} it is already exists`);
-    process.exit(1);
-  } else {
-    fs.mkdirSync(paths.output);
-    console.log('✓ Created the output folder');
-    console.log('');
-  }
+  // check entry folder
+  fs.access(paths.entry, (err) => {
+    if (err) {
+      console.error(`Error: Can't find an entry folder - ${paths.entry} `);
+      process.exit(1);
+    }
 
-  console.log(`  ${argv.delete ? 'Started to move files:' : 'Started to copy files:'}`);
-  parseFiles(paths.entry);
+    // check if result folder already exists
+    fs.access(paths.output, (err) => {
+      if (err) {
+        // create result folder
+        fs.mkdir(paths.output, () => {
+          console.log('✓ Created the output folder');
+          console.log('');
+          console.log('Started to move files:');
 
-  console.log('');
-  console.log('✓ Files was successfully grouped by first letter!');
-  console.log(`  Result is here - ${paths.output}`);
-  console.log('');
-  process.exit(0);
+          // parse files
+          parseFiles(paths.entry, paths.output);
+        });
+      } else {
+        console.error(`Error: Can't create a result folder, folder ${paths.output} it is already exists`);
+        process.exit(1);
+      }
+    });
+  });
 };
 
 groupFiles();
