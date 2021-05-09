@@ -1,6 +1,7 @@
 const yargs = require('yargs');
 const path = require('path');
 const fs = require('fs');
+const util = require('util');
 const parseFiles = require('./parseFiles');
 
 const argv = yargs
@@ -28,32 +29,43 @@ const paths = {
   output: path.normalize(path.resolve(__dirname, argv.output))
 };
 
-const groupFiles = () => {
+const asyncAccess = util.promisify(fs.access);
+const asyncMkdir = util.promisify(fs.mkdir);
+
+const groupFiles = async () => {
   // check entry folder
-  fs.access(paths.entry, (err) => {
-    if (err) {
-      console.error(`Error: Can't find an entry folder - ${paths.entry} `);
-      process.exit(1);
-    }
+  try {
+    await asyncAccess(paths.entry);
+  } catch (err) {
+    console.error(`Error: Can't find an entry folder - ${paths.entry} `);
+    process.exit(1);
+  }
 
-    // check if result folder already exists
-    fs.access(paths.output, (err) => {
-      if (err) {
-        // create result folder
-        fs.mkdir(paths.output, () => {
-          console.log('✓ Created the output folder');
-          console.log('');
-          console.log('Started to move files:');
+  let outputFolderExists = true;
 
-          // parse files
-          parseFiles(paths.entry, paths.output);
-        });
-      } else {
-        console.error(`Error: Can't create a result folder, folder ${paths.output} it is already exists`);
-        process.exit(1);
-      }
-    });
-  });
+  try {
+    await asyncAccess(paths.output);
+  } catch (err) {
+    outputFolderExists = false;
+  }
+
+  if (outputFolderExists) {
+    console.error(`Error: Can't create a result folder, folder ${paths.output} it is already exists`);
+    process.exit(1);
+  }
+
+  try {
+    await asyncMkdir(paths.output);
+  } catch (err) {
+    console.error(err);
+    process.exit(1);
+  }
+
+  console.log('✓ Created the output folder');
+  console.log('');
+  console.log('Started to move files:');
+
+  await parseFiles(paths.entry, paths.output);
 };
 
 groupFiles();

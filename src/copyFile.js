@@ -1,33 +1,28 @@
 const path = require('path');
 const fs = require('fs');
+const util = require('util');
 
-const copyFile = (fileName, base, resultFolder) => {
+const asyncLink = util.promisify(fs.link);
+const asyncAccess = util.promisify(fs.access);
+const asyncMkdir = util.promisify(fs.mkdir);
+
+const copyFile = async (fileName, base, resultFolder) => {
   const firstLetter = fileName.split('')[0].toLocaleUpperCase();
   const letterFolder = path.join(resultFolder, firstLetter);
 
-  // copy file
-  const copy = () => {
-    fs.link(base, path.join(letterFolder, fileName), err => {
-      if (err) {
-        console.error(err.message);
-        process.exit(1);
-      } else {
-        console.log(`....File '${fileName}' copied to ${letterFolder}`);
-      }
-    });
-  };
+  try {
+    await asyncAccess(letterFolder);
+  } catch (err) {
+    await asyncMkdir(letterFolder);
+  }
 
-  // check, if folder exists
-  fs.access(letterFolder, (err) => {
-    if (err) {
-      // create folder
-      fs.mkdir(letterFolder, () => {
-        copy();
-      });
-    } else {
-      copy();
-    }
-  });
+  try {
+    await asyncLink(base, path.join(letterFolder, fileName));
+  } catch (err) {
+    console.error(err.message);
+    process.exit(1);
+  }
+  console.log(`....File '${fileName}' copied to ${letterFolder}`);
 };
 
 module.exports = copyFile;
